@@ -1,3 +1,8 @@
+__pycache__/
+.pytest_cache/
+.env
+venv/
+*.pyc
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
