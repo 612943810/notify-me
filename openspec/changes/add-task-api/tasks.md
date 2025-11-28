@@ -3,7 +3,7 @@
 - [x] 1.2 Create `app/db.py` to initialize SQLite engine and session
 - [x] 1.3 Create `app/routers/tasks.py` with the REST endpoints listed in proposal.md
 - [x] 1.4 Wire router into `main.py` and add configuration options
-- [ ] 1.5 Add unit tests for repository functions
+- [x] 1.5 Add unit tests for repository functions
 - [x] 1.6 Add integration tests for endpoints using `TestClient`
 - [x] 1.7 Add `.env.example` updates and README usage docs
 - [x] 1.8 Create `app/agents.py` implementing an advisory AI agent (mockable)

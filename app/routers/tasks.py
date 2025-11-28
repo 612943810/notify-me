@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from sqlmodel import Session, select
 from typing import List
 
@@ -17,9 +17,10 @@ def get_session():
 
 @router.post("/tasks", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 def create_task(task_in: TaskCreate, session: Session = Depends(get_session)):
-    task = Task.from_orm(task_in)
-    if task.priority is None:
-        task.priority = "medium"
+    task_data = task_in.model_dump()
+    if task_data.get("priority") is None:
+        task_data["priority"] = "medium"
+    task = Task(**task_data)
     session.add(task)
     session.commit()
     session.refresh(task)
@@ -46,7 +47,7 @@ def update_task(task_id: int, task_in: TaskUpdate, session: Session = Depends(ge
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    task_data = task_in.dict(exclude_unset=True)
+    task_data = task_in.model_dump(exclude_unset=True)
     for key, val in task_data.items():
         setattr(task, key, val)
     session.add(task)
@@ -62,7 +63,7 @@ def delete_task(task_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Task not found")
     session.delete(task)
     session.commit()
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/tasks/{task_id}/suggest")
