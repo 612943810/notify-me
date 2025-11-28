@@ -13,7 +13,7 @@ Notify Me is an intelligent agent that helps you organize your tasks and sends y
 ### Prerequisites
 
 *   Python 3.7+
-*   OpenAI API Key
+*   Gemini API Key (optional) or OpenAI API Key
 
 ### Installation
 
@@ -29,10 +29,16 @@ Notify Me is an intelligent agent that helps you organize your tasks and sends y
     pip install -r requirements.txt
     ```
 
-3.  Create a `.env` file and add your OpenAI API key:
+3.  Create a `.env` file and add your AI provider API key. This project supports Google Gemini (preferred) and OpenAI as fallbacks. Example:
 
     ```bash
+    # For Gemini (preferred):
+    GEMINI_API_KEY="your-gemini-api-key"
+    ENABLE_GEMINI=true
+
+    # Or for OpenAI:
     OPENAI_API_KEY="your-openai-api-key"
+    ENABLE_AI=true
     ```
 
 ### Running the Application
@@ -55,4 +61,4 @@ You can interact with the agent through the API endpoints.
 
 *   [FastAPI](https.fastapi.tiangolo.com/)
 *   [LangChain](https://js.langchain.com/docs/)
-*   [OpenAI](https://openai.com/)
+*   [OpenAI](https://openai.com/) or Google Gemini (optional)

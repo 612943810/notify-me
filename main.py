@@ -1,11 +1,31 @@
 from fastapi import FastAPI
 import os
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Load environment variables from a .env file when present
 load_dotenv()
 
-app = FastAPI()
+from app.db import create_db_and_tables
+from app.routers.tasks import router as tasks_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan handler to run startup/shutdown tasks.
+
+    Using a lifespan handler avoids the deprecated `@app.on_event("startup")`
+    API and keeps startup logic explicit and test-friendly.
+    """
+    # ensure DB tables exist when the app starts
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+# include routers at import time so routes are available to TestClient immediately
+app.include_router(tasks_router)
 
 
 @app.get("/")

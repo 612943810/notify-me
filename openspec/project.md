@@ -7,7 +7,7 @@ Notify Me is an intelligent task management and reminder service that helps user
 ## Tech Stack
 - Language: Python 3.8+ (recommended 3.11+)
 - Web framework: FastAPI + Uvicorn
-- AI/agents: LangChain (optional integration) and OpenAI API
+-- AI/agents: LangChain (optional integration) and Google Gemini (preferred) or OpenAI API
 - Data: SQLite for local/dev persistence (SQLModel or SQLAlchemy), swappable for PostgreSQL in production
 - Background jobs: FastAPI BackgroundTasks or APScheduler for notification scheduling
 - Config: python-dotenv for local env, environment variables for deployment
@@ -27,12 +27,12 @@ Notify Me is an intelligent task management and reminder service that helps user
 - API-first: expose features via REST endpoints in `main.py` / `app` package
 - Modular services: separate AI/agent integrations into their own modules to avoid import-time failures (lazy imports)
 - Persistence abstraction: use a simple repository layer so switching from SQLite to Postgres is straightforward
-- Keep third-party integrations (OpenAI, email, SMS) behind adapter interfaces for testing/mocking
+-- Keep third-party integrations (Gemini/OpenAI, email, SMS) behind adapter interfaces for testing/mocking
 
 ### Testing Strategy
 - Unit tests: `pytest` for business logic and small modules
 - Integration tests: pytest with TestClient for API endpoints (tests live under `tests/`)
-- Mock external services in CI (OpenAI, email) and use environment variables to enable/disable live calls
+-- Mock external services in CI (Gemini/OpenAI, email) and use environment variables to enable/disable live calls
 - Aim for small, fast tests (default < 1s per unit test)
 
 ### Git Workflow
@@ -47,11 +47,11 @@ Notify Me is an intelligent task management and reminder service that helps user
 
 ## Important Constraints
 - Privacy: Do not store sensitive PII in plain text or send it to external services without consent.
-- API keys: `OPENAI_API_KEY` and other secrets must be provided via environment variables; never commit them.
+-- API keys: `GEMINI_API_KEY`, `OPENAI_API_KEY`, and other secrets must be provided via environment variables; never commit them.
 - Cost: OpenAI usage should be opt-in; default is to mock or disable live calls in CI/dev.
 
 ## External Dependencies
-- OpenAI API (optional) — used for prioritization and smart suggestions
+-- Google Gemini API or OpenAI API (optional) — used for prioritization and smart suggestions
 - Email provider (SMTP) or SendGrid/Mailgun for notifications (optional)
 - SMS provider (Twilio) for SMS notifications (optional)
 - Optional: Sentry for error monitoring
