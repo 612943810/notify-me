@@ -20,14 +20,14 @@ The system SHALL provide a Task CRUD API that allows clients to create, read, up
 - **THEN** the system marks the task as deleted (or removes it) and returns 204 No Content
 
 ### Requirement: Notifications scheduling (scaffold)
-The system SHOULD provide a mechanism to schedule notifications based on task due dates. Initial implementation MAY be a placeholder/background task runner that logs notification events.
+The system SHALL provide a mechanism to schedule notifications based on task due dates. Initial implementation SHALL be a placeholder/background task runner that logs notification events.
 
 #### Scenario: Schedule notification
 - **WHEN** a task with a due date is created and notifications are enabled
 - **THEN** the system enqueues a notification job (or logs an intended notification) respecting the user's timezone and do-not-disturb rules
 
 ### Requirement: Advisory AI Agent for Task Suggestions
-The system SHOULD provide an advisory AI agent that can suggest task priorities and scheduling recommendations. The agent SHALL be advisory by default and MUST NOT change persisted tasks without explicit user approval.
+The system SHALL provide an advisory AI agent that can suggest task priorities and scheduling recommendations. The agent SHALL be advisory by default and MUST NOT change persisted tasks without explicit user approval.
 
 #### Scenario: Request suggestion
 - **WHEN** a client POSTs to `/tasks/{id}/suggest` (or requests a suggestion via internal hook)

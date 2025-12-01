@@ -1,6 +1,6 @@
 import os
 from typing import Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .models import Task
 
@@ -23,7 +23,7 @@ async def suggest_priority(task: Task) -> Dict[str, Any]:
     be extended to call external AI providers. For now we provide a simple rule-based
     suggestion so behaviour is predictable in CI and dev.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     suggestion = {"priority": "medium", "confidence": 0.5, "explanation": "Default suggestion."}
 
     if task.due_date:

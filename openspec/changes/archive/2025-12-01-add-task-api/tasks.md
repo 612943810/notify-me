@@ -12,8 +12,8 @@
 - [x] 1.11 Add `ENABLE_AI` and `AI_MODE` config flags to `.env.example` and README (default advisory/mock mode)
 
 ## 2. Validation
-- [ ] 2.1 Run `pytest` and ensure all tests pass
-- [ ] 2.2 Run `openspec validate add-task-api --strict` (after adding spec deltas)
+- [x] 2.1 Run `pytest` and ensure all tests pass
+- [x] 2.2 Run `openspec validate add-task-api --strict` (after adding spec deltas)
 
 ## 3. Optional
 - [ ] 3.1 Add background scheduler job to enqueue notifications

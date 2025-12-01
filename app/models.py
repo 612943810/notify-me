@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import SQLModel, Field
@@ -11,7 +11,7 @@ class Task(SQLModel, table=True):
     due_date: Optional[datetime] = None
     priority: str = "medium"
     status: str = "todo"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TaskCreate(SQLModel):
