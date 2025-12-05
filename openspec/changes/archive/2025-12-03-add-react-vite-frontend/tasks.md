@@ -1,6 +1,6 @@
 ## 1. Project Setup
-- [ ] 1.1 Initialize Vite + React + TypeScript project
-- [ ] 1.2 Set up ESLint, Prettier, and Husky
+- [x] 1.1 Initialize Vite + React + TypeScript project
+- [x] 1.2 Set up ESLint, Prettier, and Husky
 - [ ] 1.3 Configure Vite proxy for API requests
 - [ ] 1.4 Add basic project structure and routing
 
