@@ -1,5 +1,5 @@
 ## 1. Testing and Validation
-- [ ] 1.1 Create unit tests for TaskAgent parsing functionality
+- [x] 1.1 Create unit tests for TaskAgent parsing functionality
 - [ ] 1.2 Create unit tests for priority suggestions
 - [ ] 1.3 Create unit tests for schedule suggestions
 - [ ] 1.4 Create unit tests for task summarization

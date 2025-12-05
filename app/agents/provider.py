@@ -3,8 +3,28 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 
-from langchain.chat_models import ChatOpenAI, ChatGooglePalm
-from langchain.schema import HumanMessage, SystemMessage
+try:
+    from langchain.chat_models import ChatOpenAI
+    from langchain.chat_models.google_palm import ChatGooglePalm
+except ImportError:
+    # Fallback for newer langchain versions
+    try:
+        from langchain_community.chat_models import ChatOpenAI
+        from langchain_community.chat_models.google_palm import ChatGooglePalm
+    except ImportError:
+        # If all else fails, create dummy classes
+        ChatOpenAI = None
+        ChatGooglePalm = None
+try:
+    from langchain.schema import HumanMessage, SystemMessage
+except ImportError:
+    # Fallback for newer langchain versions
+    try:
+        from langchain_core.messages import HumanMessage, SystemMessage
+    except ImportError:
+        # If all else fails, create dummy classes
+        HumanMessage = None
+        SystemMessage = None
 
 from ..models import Task, TaskCreate
 
@@ -21,9 +41,9 @@ class TaskAgent:
     
     def _init_llm(self):
         """Initialize the appropriate LLM based on available API keys."""
-        if os.getenv("OPENAI_API_KEY"):
+        if os.getenv("OPENAI_API_KEY") and ChatOpenAI:
             return ChatOpenAI(temperature=0.7)
-        elif os.getenv("GOOGLE_API_KEY"):
+        elif os.getenv("GOOGLE_API_KEY") and ChatGooglePalm:
             return ChatGooglePalm(temperature=0.7)
         return None
 
