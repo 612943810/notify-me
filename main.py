@@ -8,6 +8,7 @@ load_dotenv()
 
 from app.db import create_db_and_tables
 from app.routers.tasks import router as tasks_router
+from app.routers.agent import router as agent_router
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ app = FastAPI(lifespan=lifespan)
 
 # include routers at import time so routes are available to TestClient immediately
 app.include_router(tasks_router)
+app.include_router(agent_router)
 
 
 @app.get("/")
