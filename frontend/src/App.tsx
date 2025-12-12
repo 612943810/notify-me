@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from './components/ui/Button'
-import { DesignSystemDemo } from './components/DesignSystemDemo'
-import { Code2, LayoutGrid } from 'lucide-react'
-import { Toaster } from './components/ui/Toaster'
+import { LayoutGrid } from 'lucide-react'
+import { ThemeToggle } from './components/ThemeToggle'
 
 // Simple type for our tasks
 type Task = {
@@ -31,6 +30,12 @@ function TaskForm({
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4 p-4 border rounded-lg">
+      <header className="p-4 border-b flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Task Manager</h1>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+        </div>
+      </header>
       <h3 className="text-lg font-medium">Add New Task</h3>
       <div>
         <input
@@ -305,19 +310,22 @@ function App() {
     <div className="min-h-screen bg-background text-foreground bg-pattern">
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">TaskFlow</h1>
+                <p className="text-sm text-muted-foreground">Organize, prioritize, and conquer your tasks</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">TaskFlow</h1>
-              <p className="text-sm text-muted-foreground">Organize, prioritize, and conquer your tasks</p>
-            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>

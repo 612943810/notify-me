@@ -6,51 +6,96 @@
 /* Custom styles and utilities */
 @layer base {
   :root {
-    /* Base colors */
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 5%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 4%;
-    --popover-foreground: 0 0% 98%;
+    /* Light theme (default) - Enhanced for better contrast */
+    --background: 0 0% 98%;
+    --foreground: 240 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 15%;
     
-    /* Primary colors - Vibrant blue */
-    --primary: 210 100% 50%;
-    --primary-foreground: 210 40% 98%;
-    --primary-light: 214.3 94.6% 92.7%;
+    /* Primary colors - More vibrant blue */
+    --primary: 217.2 91.2% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 210 100% 96%;
     --primary-light-foreground: 222.2 47.4% 11.2%;
     
-    /* Secondary colors - Teal */
-    --secondary: 173 80% 40%;
+    /* Secondary colors - Brighter teal */
+    --secondary: 167 94% 38%;
     --secondary-foreground: 0 0% 100%;
     
-    /* Accent colors - Purple */
-    --accent: 262 83% 58%;
+    /* Accent colors - Brighter purple */
+    --accent: 262 100% 60%;
     --accent-foreground: 0 0% 100%;
     
-    /* Destructive colors - Red */
-    --destructive: 0 84% 60%;
+    /* Destructive colors - More vibrant red */
+    --destructive: 0 84% 63%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Muted colors */
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 64.9%;
+    /* Muted colors - Lighter background, darker text */
+    --muted: 0 0% 96%;
+    --muted-foreground: 240 3.7% 35%;
     
-    /* Border & input */
-    --border: 240 3.7% 25%;
-    --input: 240 3.7% 25%;
-    --ring: 240 4.9% 83.9%;
+    /* Border & input - Lighter gray */
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 217.2 91.2% 50%;
     
-    /* Custom colors */
-    --success: 142 76% 36%;
+    /* Custom colors - More vibrant */
+    --success: 142 76% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 38 100% 55%;
     --warning-foreground: 0 0% 100%;
-    --info: 199 89% 48%;
+    --info: 199 100% 50%;
     --info-foreground: 0 0% 100%;
     
     /* Radius */
     --radius: 0.75rem;
+  }
+
+  /* Dark theme - Green color scheme */
+  :root.dark, .dark, .dark-theme, [data-theme="dark"] {
+    --background: 120 15% 10%;
+    --foreground: 120 20% 95%;
+    --card: 120 10% 15%;
+    --card-foreground: 120 20% 95%;
+    --popover: 120 10% 12%;
+    --popover-foreground: 120 20% 95%;
+    
+    /* Primary colors - Green */
+    --primary: 142 76% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 142 76% 20%;
+    --primary-light-foreground: 0 0% 100%;
+    
+    /* Secondary colors - Lime */
+    --secondary: 83 78% 55%;
+    --secondary-foreground: 0 0% 0%;
+    
+    /* Accent colors - Teal */
+    --accent: 167 94% 38%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Destructive colors - Red */
+    --destructive: 0 84% 63%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Muted colors - Darker greens */
+    --muted: 120 10% 25%;
+    --muted-foreground: 120 20% 80%;
+    
+    /* Border & input - Dark green grays */
+    --border: 120 10% 30%;
+    --input: 120 10% 30%;
+    --ring: 142 76% 45%;
+    
+    /* Custom colors */
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 58%;
+    --warning-foreground: 0 0% 0%;
+    --info: 198 93% 60%;
+    --info-foreground: 0 0% 100%;
   }
 }
 
@@ -85,22 +130,43 @@
   
   /* Subtle background pattern */
   .bg-pattern {
-    background-color: hsl(240, 10%, 4%);
+    background-color: hsl(var(--background));
     background-image: 
-      radial-gradient(at 47% 33%, hsla(240, 100%, 60%, 0.1) 0%, transparent 59%),
-      radial-gradient(at 82% 65%, hsla(210, 100%, 50%, 0.1) 0%, transparent 55%),
-      radial-gradient(at 20% 20%, hsla(267, 89%, 62%, 0.1) 0%, transparent 50%);
+      radial-gradient(at 47% 33%, hsla(var(--primary) / 0.2) 0%, transparent 59%),
+      radial-gradient(at 82% 65%, hsla(var(--accent) / 0.15) 0%, transparent 55%),
+      radial-gradient(at 20% 20%, hsla(var(--secondary) / 0.1) 0%, transparent 50%);
     background-attachment: fixed;
+    background-size: cover;
   }
 }
 
 /* Base styles */
 @layer base {
-  html, body {
-    height: 100%;
-    width: 100%;
+  :root {
+    /* Ensure full viewport coverage */
+    min-height: 100vh;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+  
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    width: 100%;
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  /* Ensure the main app container takes full height */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
   
   :root {
