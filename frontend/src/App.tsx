@@ -241,7 +241,7 @@ function App() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [activeTab, setActiveTab] = useState<'tasks' | 'chat'>('tasks');
-  const [suggestingTaskId, setSuggestingTaskId] = useState<number | null>(null);
+  const [suggestingTaskId] = useState<number | null>(null);
 
   // Add some sample tasks for better visualization
   useEffect(() => {

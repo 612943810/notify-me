@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Button } from "./ui/Button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/Card"
 
