@@ -57,8 +57,9 @@ You can interact with the agent through the API endpoints.
 
 *   `GET /`: Returns a "Hello, World" message.
 
+
 ## Technologies Used
 
-*   [FastAPI](https.fastapi.tiangolo.com/)
+*   [FastAPI](https://fastapi.tiangolo.com/)
 *   [LangChain](https://js.langchain.com/docs/)
 *   [OpenAI](https://openai.com/) or Google Gemini (optional)
