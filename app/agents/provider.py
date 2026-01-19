@@ -1,32 +1,123 @@
 import os
 import re
+import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
-try:
-    from langchain.chat_models import ChatOpenAI
-    from langchain.chat_models.google_palm import ChatGooglePalm
-except ImportError:
-    # Fallback for newer langchain versions
-    try:
-        from langchain_community.chat_models import ChatOpenAI
-        from langchain_community.chat_models.google_palm import ChatGooglePalm
-    except ImportError:
-        # If all else fails, create dummy classes
-        ChatOpenAI = None
-        ChatGooglePalm = None
-try:
-    from langchain.schema import HumanMessage, SystemMessage
-except ImportError:
-    # Fallback for newer langchain versions
-    try:
-        from langchain_core.messages import HumanMessage, SystemMessage
-    except ImportError:
-        # If all else fails, create dummy classes
-        HumanMessage = None
-        SystemMessage = None
+from langchain_core.language_models import BaseLanguageModel
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.runnables import RunnablePassthrough
+from pydantic import BaseModel, Field, field_validator
+from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatGooglePalm
 
 from ..models import Task, TaskCreate
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+
+# Pydantic models for structured output parsing
+class TaskParseOutput(BaseModel):
+    """Structured output for task parsing."""
+    title: str = Field(description="Task title", max_length=100)
+    description: Optional[str] = Field(default=None, description="Optional task description")
+    due_date: Optional[str] = Field(default=None, description="Due date in ISO format (YYYY-MM-DDTHH:MM:SS)")
+    priority: str = Field(description="Priority level", pattern="^(high|medium|low)$")
+
+    @field_validator('due_date', mode='before')
+    @classmethod
+    def parse_due_date(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str):
+            # Try to parse various date formats
+            try:
+                # Handle relative dates
+                now = datetime.now(timezone.utc)
+                v_lower = v.lower().strip()
+                if v_lower == "today":
+                    return now.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+                elif v_lower == "tomorrow":
+                    tomorrow = now + timedelta(days=1)
+                    return tomorrow.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+                elif v_lower.startswith("in ") and " days" in v_lower:
+                    days_match = re.search(r"in (\d+) days?", v_lower)
+                    if days_match:
+                        days = int(days_match.group(1))
+                        future_date = now + timedelta(days=days)
+                        return future_date.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+                # Try parsing as ISO format
+                datetime.fromisoformat(v.replace('Z', '+00:00'))
+                return v
+            except ValueError:
+                pass
+        return None
+
+
+class PrioritySuggestionOutput(BaseModel):
+    """Structured output for priority suggestions."""
+    priority: str = Field(description="Suggested priority", pattern="^(high|medium|low)$")
+    confidence: float = Field(description="Confidence score", ge=0.0, le=1.0)
+    explanation: str = Field(description="Reasoning for the suggestion")
+
+
+class ScheduleSuggestionOutput(BaseModel):
+    """Structured output for schedule suggestions."""
+    suggested_start: str = Field(description="Suggested start time in ISO format")
+    suggested_end: str = Field(description="Suggested end time in ISO format")
+    explanation: str = Field(description="Reasoning for the schedule")
+
+
+# Prompt templates
+TASK_PARSE_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are an expert task parsing assistant. Extract structured information from natural language task descriptions.
+
+Guidelines:
+- Extract concise, actionable titles
+- Identify due dates (today, tomorrow, specific dates, or "in X days")
+- Determine priority from urgency indicators (urgent, asap, important = high; low, whenever = low)
+- Provide clear descriptions when additional context is given
+
+{format_instructions}"""),
+    ("human", "Parse this task: {task_text}")
+])
+
+PRIORITY_SUGGEST_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are a task prioritization expert. Analyze tasks and suggest appropriate priority levels.
+
+Consider:
+- Urgency based on due dates
+- Task complexity and importance
+- Keywords indicating priority (urgent, critical, important, low priority, whenever)
+
+{format_instructions}"""),
+    ("human", """Task: {title}
+Description: {description}
+Due Date: {due_date}
+Current Status: {status}
+
+Suggest appropriate priority.""")
+])
+
+SCHEDULE_SUGGEST_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are a scheduling assistant. Suggest optimal timing for task completion.
+
+Consider:
+- Due dates and deadlines
+- Task priority and complexity
+- Realistic time estimates
+- Current time constraints
+
+{format_instructions}"""),
+    ("human", """Task: {title}
+Priority: {priority}
+Due Date: {due_date}
+
+Suggest optimal scheduling.""")
+])
 
 
 class TaskAgent:
@@ -38,40 +129,80 @@ class TaskAgent:
     
     def __init__(self):
         self.llm = self._init_llm()
-    
-    def _init_llm(self):
+        self._setup_chains()
+
+    def _init_llm(self) -> Optional[BaseLanguageModel]:
         """Initialize the appropriate LLM based on available API keys."""
-        if os.getenv("OPENAI_API_KEY") and ChatOpenAI:
-            return ChatOpenAI(temperature=0.7)
-        elif os.getenv("GOOGLE_API_KEY") and ChatGooglePalm:
-            return ChatGooglePalm(temperature=0.7)
+        try:
+            if os.getenv("OPENAI_API_KEY"):
+                return ChatOpenAI(temperature=0.7, model="gpt-3.5-turbo")
+            elif os.getenv("GOOGLE_API_KEY"):
+                return ChatGooglePalm(temperature=0.7)
+        except Exception as e:
+            logger.warning(f"Failed to initialize LLM: {e}")
         return None
+
+    def _setup_chains(self):
+        """Set up LangChain chains for different operations."""
+        if not self.llm:
+            self.task_parse_chain = None
+            self.priority_chain = None
+            self.schedule_chain = None
+            return
+
+        # Task parsing chain
+        task_parser = PydanticOutputParser(pydantic_object=TaskParseOutput)
+        self.task_parse_chain = (
+            TASK_PARSE_PROMPT.partial(format_instructions=task_parser.get_format_instructions())
+            | self.llm
+            | task_parser
+        )
+
+        # Priority suggestion chain
+        priority_parser = PydanticOutputParser(pydantic_object=PrioritySuggestionOutput)
+        self.priority_chain = (
+            PRIORITY_SUGGEST_PROMPT.partial(format_instructions=priority_parser.get_format_instructions())
+            | self.llm
+            | priority_parser
+        )
+
+        # Schedule suggestion chain
+        schedule_parser = PydanticOutputParser(pydantic_object=ScheduleSuggestionOutput)
+        self.schedule_chain = (
+            SCHEDULE_SUGGEST_PROMPT.partial(format_instructions=schedule_parser.get_format_instructions())
+            | self.llm
+            | schedule_parser
+        )
 
     # Task Parsing
     async def parse_task(self, text: str) -> TaskCreate:
-        """Parse natural language task into structured data."""
-        if not self.llm:
-            return self._parse_nl_task_local(text)
-            
-        try:
-            messages = [
-                SystemMessage(content="You are a helpful task parsing assistant."),
-                HumanMessage(content=f"Parse this task into JSON with: title, description, due_date, priority.\nInput: {text}")
-            ]
-            response = await self.llm.agenerate([messages])
-            return self._parse_llm_response(response)
-        except Exception as e:
-            print(f"LLM Error: {e}")
+        """Parse natural language task into structured data using LangChain chains."""
+        if not self.task_parse_chain:
+            logger.info("No LLM available, using local parsing")
             return self._parse_nl_task_local(text)
 
-    def _parse_llm_response(self, response) -> TaskCreate:
-        """Parse LLM response into TaskCreate model."""
-        text = response.generations[0][0].text
+        try:
+            result = await self.task_parse_chain.ainvoke({"task_text": text})
+            return self._convert_parse_result_to_task_create(result)
+        except Exception as e:
+            logger.error(f"LLM parsing failed: {e}")
+            return self._parse_nl_task_local(text)
+
+    def _convert_parse_result_to_task_create(self, parse_result: TaskParseOutput) -> TaskCreate:
+        """Convert structured parse result to TaskCreate model."""
+        due_date = None
+        if parse_result.due_date:
+            try:
+                # Parse the ISO string back to datetime
+                due_date = datetime.fromisoformat(parse_result.due_date.replace('Z', '+00:00'))
+            except ValueError:
+                logger.warning(f"Could not parse due_date: {parse_result.due_date}")
+
         return TaskCreate(
-            title=text[:100],
-            description=text,
-            due_date=None,
-            priority="medium"
+            title=parse_result.title,
+            description=parse_result.description,
+            due_date=due_date,
+            priority=parse_result.priority
         )
 
     def _parse_nl_task_local(self, text: str) -> TaskCreate:
@@ -114,19 +245,21 @@ class TaskAgent:
 
     # Priority Suggestions
     async def suggest_priority(self, task: Task) -> Dict[str, Any]:
-        """Suggest priority for a task."""
-        if not self.llm:
+        """Suggest priority for a task using LangChain chains."""
+        if not self.priority_chain:
+            logger.info("No LLM available, using local priority suggestion")
             return self._suggest_priority_local(task)
-            
+
         try:
-            messages = [
-                SystemMessage(content="You are a task prioritization assistant."),
-                HumanMessage(content=f"Suggest priority (high/medium/low) for task: {task.title}\n{task.description}")
-            ]
-            response = await self.llm.agenerate([messages])
-            return {"priority": response.generations[0][0].text.lower(), "confidence": 0.9}
+            result = await self.priority_chain.ainvoke({
+                "title": task.title,
+                "description": task.description or "",
+                "due_date": task.due_date.isoformat() if task.due_date else "None",
+                "status": task.status or "todo"
+            })
+            return result.dict()
         except Exception as e:
-            print(f"LLM Priority Error: {e}")
+            logger.error(f"LLM priority suggestion failed: {e}")
             return self._suggest_priority_local(task)
 
     def _suggest_priority_local(self, task: Task) -> Dict[str, Any]:
@@ -141,15 +274,20 @@ class TaskAgent:
 
     # Scheduling
     async def suggest_schedule(self, task: Task) -> Dict[str, Any]:
-        """Suggest a schedule for the task."""
-        if not self.llm:
+        """Suggest a schedule for the task using LangChain chains."""
+        if not self.schedule_chain:
+            logger.info("No LLM available, using local schedule suggestion")
             return self._suggest_schedule_local(task)
-            
+
         try:
-            # LLM-based scheduling logic would go here
-            return self._suggest_schedule_local(task)
+            result = await self.schedule_chain.ainvoke({
+                "title": task.title,
+                "priority": task.priority or "medium",
+                "due_date": task.due_date.isoformat() if task.due_date else "None"
+            })
+            return result.dict()
         except Exception as e:
-            print(f"LLM Schedule Error: {e}")
+            logger.error(f"LLM schedule suggestion failed: {e}")
             return self._suggest_schedule_local(task)
 
     def _suggest_schedule_local(self, task: Task) -> Dict[str, Any]:
