@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from './components/ui/Button'
 import { LayoutGrid } from 'lucide-react'
 import { ThemeToggle } from './components/ThemeToggle'
+import ChatBox from './components/ChatBox'
 
 // Simple type for our tasks
 type Task = {
@@ -29,38 +30,36 @@ function TaskForm({
   loading: boolean
 }) {
   return (
-    <form onSubmit={onSubmit} className="space-y-4 p-4 border rounded-lg">
-      <header className="p-4 border-b flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Task Manager</h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+    <div className="bg-card border border-border rounded-lg p-6">
+      <h3 className="text-lg font-semibold mb-4">Add New Task</h3>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Task Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter task title..."
+            className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+            disabled={loading}
+          />
         </div>
-      </header>
-      <h3 className="text-lg font-medium">Add New Task</h3>
-      <div>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Task title"
-          className="w-full p-2 border rounded"
-          disabled={loading}
-        />
-      </div>
-      <div>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Task description"
-          className="w-full p-2 border rounded"
-          rows={3}
-          disabled={loading}
-        />
-      </div>
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Adding...' : 'Add Task'}
-      </Button>
-    </form>
+        <div>
+          <label className="block text-sm font-medium mb-2">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter task description..."
+            className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
+            rows={3}
+            disabled={loading}
+          />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Adding...' : 'Add Task'}
+        </Button>
+      </form>
+    </div>
   )
 }
 
@@ -77,35 +76,52 @@ function TaskList({
   suggestingTaskId: number | null
 }) {
   if (tasks.length === 0) {
-    return <div className="text-muted-foreground text-center py-8">No tasks yet. Add one above!</div>
+    return <div className="text-muted-foreground text-center py-12">No tasks yet. Add one above!</div>
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {tasks.map(task => (
-        <div key={task.id} className="p-4 border rounded-lg">
-          <div className="flex justify-between items-start">
-            <div>
-              <h4 className="font-medium">{task.title}</h4>
-              {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
-              <div className="mt-2 text-xs text-muted-foreground">
-                Status: <span className="font-medium">{task.status}</span>
+        <div key={task.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-sm transition-shadow">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-foreground mb-1">{task.title}</h4>
+              {task.description && (
+                <p className="text-sm text-muted-foreground mb-2 leading-relaxed">{task.description}</p>
+              )}
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  task.status === 'done'
+                    ? 'bg-success/10 text-success'
+                    : task.status === 'in-progress'
+                    ? 'bg-warning/10 text-warning'
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  {task.status.replace('-', ' ')}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Priority: <span className="font-medium capitalize">{task.priority}</span>
+                </span>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onUpdateStatus(task.id, 'done')}
-                disabled={suggestingTaskId === task.id}
-              >
-                Complete
-              </Button>
+            <div className="flex gap-2 flex-shrink-0">
+              {task.status !== 'done' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onUpdateStatus(task.id, 'done')}
+                  disabled={suggestingTaskId === task.id}
+                  className="text-xs"
+                >
+                  Complete
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(task.id)}
                 disabled={suggestingTaskId === task.id}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
               >
                 Delete
               </Button>
@@ -117,124 +133,7 @@ function TaskList({
   )
 }
 
-// ChatBox component with message history and improved styling
-function ChatBox({ onMessage }: { onMessage: (message: string) => void }) {
-  const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
-  const [isLoading, setIsLoading] = useState(false)
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!message.trim() || isLoading) return
-    
-    // Add user message to chat
-    const userMessage = { role: 'user' as const, content: message }
-    setMessages(prev => [...prev, userMessage])
-    
-    // Show loading state
-    setIsLoading(true)
-    const loadingMessage = { role: 'assistant' as const, content: 'Thinking...' }
-    setMessages(prev => [...prev, loadingMessage])
-    
-    try {
-      // Call the onMessage callback with the user's message
-      onMessage(message)
-      
-      // Simulate a response (in a real app, this would be an API call)
-      setTimeout(() => {
-        setMessages(prev => {
-          const newMessages = [...prev]
-          newMessages[newMessages.length - 1] = { 
-            role: 'assistant', 
-            content: 'I received your message: ' + message 
-          }
-          return newMessages
-        })
-        setIsLoading(false)
-      }, 1000)
-    } catch (error) {
-      console.error('Error sending message:', error)
-      setMessages(prev => {
-        const newMessages = [...prev]
-        newMessages[newMessages.length - 1] = { 
-          role: 'assistant', 
-          content: 'Sorry, I encountered an error. Please try again.' 
-        }
-        return newMessages
-      })
-      setIsLoading(false)
-    }
-    
-    setMessage('')
-  }
 
-  return (
-    <div className="border border-border/40 rounded-xl p-4 h-full bg-card/50 backdrop-blur-sm shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-white">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </div>
-        <h3 className="font-semibold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AI Assistant</h3>
-      </div>
-      
-      <div className="h-64 overflow-y-auto mb-4 rounded-lg p-3 bg-muted/10 border border-border/30">
-        {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-muted-foreground text-center">
-              Ask me anything about your tasks! I can help you manage them better.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((msg, index) => (
-              <div 
-                key={index} 
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div 
-                  className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-primary/90 text-primary-foreground' 
-                      : 'bg-muted/50 text-foreground'
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 px-3 py-2 text-sm border border-border/40 rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:outline-none transition-all"
-          disabled={isLoading}
-        />
-        <Button 
-          type="submit" 
-          disabled={!message.trim() || isLoading}
-          className="shrink-0"
-        >
-          {isLoading ? (
-            <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="m22 2-7 20-4-9-9-4Z"/>
-              <path d="M22 2 11 13"/>
-            </svg>
-          )}
-        </Button>
-      </form>
-    </div>
-  )
-}
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -330,14 +229,14 @@ function App() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
-          <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg border border-border/30">
+          <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg border border-border/30 w-fit">
             <button
               onClick={() => setActiveTab('tasks')}
               className={`px-6 py-2 font-medium rounded-md transition-all duration-200 ${
-                activeTab === 'tasks' 
-                  ? 'bg-background text-foreground shadow-sm' 
+                activeTab === 'tasks'
+                  ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground/80'
               }`}
             >
@@ -355,8 +254,8 @@ function App() {
             <button
               onClick={() => setActiveTab('chat')}
               className={`px-6 py-2 font-medium rounded-md transition-all duration-200 ${
-                activeTab === 'chat' 
-                  ? 'bg-background text-foreground shadow-sm' 
+                activeTab === 'chat'
+                  ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground/80'
               }`}
             >
@@ -371,9 +270,9 @@ function App() {
         </div>
 
         {activeTab === 'tasks' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <TaskForm 
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+            <div className="xl:col-span-2 space-y-6">
+              <TaskForm
                 title={title}
                 setTitle={setTitle}
                 description={description}
@@ -381,25 +280,30 @@ function App() {
                 onSubmit={handleSubmit}
                 loading={suggestingTaskId !== null}
               />
-              
-              <div className="border rounded-lg p-4">
-                <h3 className="text-lg font-medium mb-4">Your Tasks</h3>
-                <TaskList 
-                  tasks={tasks} 
+
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Your Tasks</h3>
+                <TaskList
+                  tasks={tasks}
                   onDelete={handleDelete}
                   onUpdateStatus={handleUpdateStatus}
                   suggestingTaskId={suggestingTaskId}
                 />
               </div>
             </div>
-            <div className="lg:col-span-1">
-              <ChatBox onMessage={handleSendMessage} />
+            <div className="xl:col-span-1">
+              <div className="sticky top-8">
+                <h3 className="text-lg font-medium mb-4">AI Assistant</h3>
+                <div className="h-[500px] min-h-[400px]">
+                  <ChatBox apiBase="http://localhost:8000" onMessage={handleSendMessage} />
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <ChatBox onMessage={handleSendMessage} />
+          <div className="max-w-4xl mx-auto">
+            <div className="h-[600px] min-h-[500px]">
+              <ChatBox apiBase="http://localhost:8000" onMessage={handleSendMessage} />
             </div>
           </div>
         )}
