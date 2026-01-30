@@ -1,63 +1,29 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from dotenv import load_dotenv
-from contextlib import asynccontextmanager
+from backend.routes import router
 
-# Load environment variables from a .env file when present
-load_dotenv()
-
-from app.db import create_db_and_tables
-from app.routers.tasks import router as tasks_router
-from app.routers.agent import router as agent_router
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan handler to run startup/shutdown tasks.
-
-    Using a lifespan handler avoids the deprecated `@app.on_event("startup")`
-    API and keeps startup logic explicit and test-friendly.
-    """
-    # ensure DB tables exist when the app starts
-    create_db_and_tables()
-    yield
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Boilerplate API",
+    description="A simple FastAPI boilerplate you can expand on",
+    version="1.0.0"
+)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"],  # Add your frontend URLs
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# include routers at import time so routes are available to TestClient immediately
-app.include_router(tasks_router)
-app.include_router(agent_router)
-
+# Include routers
+app.include_router(router)
 
 @app.get("/")
 def read_root():
-    """Root endpoint returning a friendly greeting.
-
-    Kept intentionally simple so the project is runnable without LangChain
-    being required at import time. LangChain integrations can be added
-    behind feature flags or in separate modules to avoid import errors.
-    """
-    return {"hello": "world"}
-
+    return {"message": "Welcome to the Boilerplate API!", "status": "running"}
 
 @app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-if __name__ == "__main__":
-    # Allow running the app directly with `python main.py` for local dev
-    import uvicorn
-
-    uvicorn.run("main:app", host="127.0.0.1", port=int(os.getenv("PORT", 8000)), reload=True)
+def health_check():
+    return {"status": "healthy"}
